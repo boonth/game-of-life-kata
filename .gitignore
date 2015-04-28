@@ -1,0 +1,5 @@
+*.swp
+*.pyc
+
+/golly-2.6-win
+/opengl_examples

@@ -1,0 +1,10 @@
+# grid view bounds, in terms of cell coordinates
+# format: <xmin> <xmax> <ymin> <ymax>
+0 7 0 4
+
+# live cells, specified by <column> <row>
+5 1
+4 2
+4 3
+5 3
+6 3
