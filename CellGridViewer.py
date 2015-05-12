@@ -135,7 +135,7 @@ class CellGridViewerWidget(QGLWidget):
             glDisable(GL_BLEND);
             glDisable(GL_LINE_SMOOTH);
 
-class CellGridViewerWindow(QtGui.QMainWindow):
+class CellGridViewerMainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         """Create the window gui"""
@@ -145,27 +145,34 @@ class CellGridViewerWindow(QtGui.QMainWindow):
 
     def initUI(self):
 
-        exit_icon = os.path.join(os.path.dirname(__file__), 'icons/close.ico')
-        exit = QtGui.QAction(QtGui.QIcon(exit_icon), "Exit", self)
-        exit.setShortcut("Ctrl+Q")
-        exit.setStatusTip('Exit application')
-        self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
-
         open_icon = os.path.join(os.path.dirname(__file__), 'icons/open.ico')
         openFile = QtGui.QAction(QtGui.QIcon(open_icon), "Load File", self)
         openFile.setShortcut("Ctrl+O")
         openFile.setStatusTip('Load File')
         self.connect(openFile, QtCore.SIGNAL('triggered()'), self.onOpen)
 
+        tick_icon = os.path.join(os.path.dirname(__file__), 'icons/tick.ico')
+        tick = QtGui.QAction(QtGui.QIcon(tick_icon), "Tick", self)
+        tick.setStatusTip('Tick')
+        self.connect(tick, QtCore.SIGNAL('triggered()'), self.onTick)
+
+        exit_icon = os.path.join(os.path.dirname(__file__), 'icons/close.ico')
+        exit = QtGui.QAction(QtGui.QIcon(exit_icon), "Exit", self)
+        exit.setShortcut("Ctrl+Q")
+        exit.setStatusTip('Exit application')
+        self.connect(exit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+
         self.setWindowTitle('Game of Life')
 
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(openFile)
+        fileMenu.addAction(tick)
         fileMenu.addAction(exit)
 
         toolbar = self.addToolBar('Exit')
         toolbar.addAction(openFile)
+        toolbar.addAction(tick)
         toolbar.addAction(exit)
 
         self.viewer = CellGridViewerWidget(self)
@@ -182,6 +189,12 @@ class CellGridViewerWindow(QtGui.QMainWindow):
 
         if filename != '':
             self.loadCellFile(str(filename))
+
+    def onTick(self):
+        """Triggered when opening file"""
+
+        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
+        print 'filename:', filename
 
     def loadCellFile(self, filename):
         """Load a cell file"""
@@ -369,7 +382,7 @@ class CellGridViewerWindow(QtGui.QMainWindow):
 
 if __name__ == '__main__':
     app = QtGui.QApplication(['Game of Life'])
-    window = CellGridViewerWindow()
+    window = CellGridViewerMainWindow()
     if len(sys.argv) >= 2:
         window.loadCellFile(sys.argv[1])
     window.show()

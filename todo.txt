@@ -1,15 +1,15 @@
 todo
 -------------------------------
 - make grid infinite
-- find way to refresh and do animation
-  - variable amount of pausing
 - add 'play' option to menu bar
 - add 'tick' option to menu bar
-- update status bar while mousing over
+- find way to refresh and do animation
+  - variable amount of pausing
 - keep aspect ratio constant
   - change size of window / viewport to accomodate
   - take into account menu bar and task bar to keep cells square
-- when resizing, just reveal more of the grid
+  - when resizing, just reveal more of the grid
+- update status bar while mousing over
 - add reader classes, window should not be reading
 - add writers for all outputs
-
+- add tests
