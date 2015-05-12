@@ -11,13 +11,18 @@ Cell coordinates can be negative. Each cell has width and height of 1. So cell
 """
 
 import math
+import os
+import sys
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import os
 from PyQt4 import QtCore
 from PyQt4 import QtGui
 from PyQt4.QtOpenGL import *
-import sys
+
+from CellGrid import CellGrid
+import MCellFile
+import RLECellFile
 
 
 # cell size in pixels
@@ -142,6 +147,7 @@ class CellGridViewerMainWindow(QtGui.QMainWindow):
 
         QtGui.QMainWindow.__init__(self)
         self.initUI()
+        self.grid = None
 
     def initUI(self):
 
@@ -193,8 +199,20 @@ class CellGridViewerMainWindow(QtGui.QMainWindow):
     def onTick(self):
         """Triggered when opening file"""
 
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
-        print 'filename:', filename
+        self.tick()
+
+    def tick(self):
+        """Generate the next generation"""
+
+        if self.grid is None:
+            return
+
+        self.grid = self.grid.tick()
+        grid = self.grid
+        self.viewer.setGridView(grid.xmin, grid.xmax, grid.ymin, grid.ymax)
+        self.viewer.setLiveCells(grid.getLiveCells())
+        self.viewer.update()
+        self.updateStatusBar()
 
     def loadCellFile(self, filename):
         """Load a cell file"""
@@ -202,139 +220,16 @@ class CellGridViewerMainWindow(QtGui.QMainWindow):
         # look at file extension to see what type of file it is
         ext = os.path.splitext(filename)[1]
         if ext == '.txt':
-            self.loadMyCellFile(filename)
+            self.grid = MCellFile.load(filename)
         elif ext == '.rle':
-            self.loadRLEFile(filename)
+            self.grid = RLECellFile.load(filename)
 
+        grid = self.grid
+        self.viewer.setGridView(grid.xmin, grid.xmax, grid.ymin, grid.ymax)
+        self.viewer.setLiveCells(grid.getLiveCells())
         self.resize()
         self.centerOnScreen()
         self.updateStatusBar()
-
-    def loadMyCellFile(self, filename):
-        """Load a cell file in my personal file format"""
-
-        # format: xmin, xmax, ymin, ymax
-        bounds = None
-        cells = []
-        fin = open(filename, 'r')
-        for line in fin:
-            line2 = line.split()
-            if len(line2) == 0 or line2[0][0] == '#':
-                continue
-
-            # if haven't read bounds of grid yet, then read it in
-            if bounds is None:
-                bounds = [int(x) for x in line2]
-                continue
-
-            cells.append((int(line2[0]), int(line2[1])))
-
-        fin.close()
-
-        self.viewer.setGridView(bounds[0], bounds[1], bounds[2], bounds[3])
-        self.viewer.setLiveCells(cells)
-
-    def loadRLEFile(self, filename):
-        """Load a file in the extended RLE file format as used by Golly"""
-
-        # format: xmin, xmax, ymin, ymax
-        cells = []
-        upper_left = [0, 0]
-        width = 0
-        height = 0
-
-        fin = open(filename, 'r')
-
-        # find any special comments, and get the width and height
-        for line in fin:
-            line2 = line.split()
-            if len(line2) == 0:
-                continue
-
-            if line2[0][0] == '#':
-                # check for special keywords
-                if line2[0] == '#CXRLE':
-                    # the line contains key value pairs, separated by spaces
-                    pairs = line.split(' ')[1:]
-
-                    # each key-value pair is separated by an '='
-                    for pair in pairs:
-                        key, value = pair.split('=')
-                        if key == 'Pos':
-                            upper_left = [int(x) for x in value.split(',')]
-                continue
-
-            # the first non-comment line is a header line, read it, then break
-            header_parts = line.split(',')
-            xpart = header_parts[0]
-            ypart = header_parts[1]
-            rule = ','.join(header_parts[2:])
-            width = int(xpart.split('=')[1])
-            height = int(ypart.split('=')[1])
-            first_line_found = True
-            break
-
-        # start at the upper left cell
-        x = upper_left[0]
-        y = upper_left[1]
-
-        # loop over the remaining part of the file to find alive cells
-        multiplier = 1
-        for line in fin:
-            line2 = line.split()
-            if len(line2) == 0 or line2[0][0] == '#':
-                continue
-
-            # step through each char of the line
-            line = line.strip()
-            i = 0
-            while i < len(line):
-                if line[i].isdigit():
-                    # read in a multiplier
-                    n = line[i]
-                    i = i + 1
-                    while i < len(line) and line[i].isdigit():
-                        n = n + line[i]
-                        i = i + 1
-                    multiplier = int(n)
-                    if i >= len(line):
-                        continue
-                if line[i] == '.' or line[i] == 'b':
-                    # a dead cell 
-                    for _ in range(multiplier):
-                        x += 1
-                    multiplier = 1
-                    i += 1
-                    if i >= len(line):
-                        continue
-                if line[i] == 'A' or line[i] == 'o':
-                    # a live cell
-                    for _ in range(multiplier):
-                        cells.append((x, y))
-                        x += 1
-                    multiplier = 1
-                    i += 1
-                    if i >= len(line):
-                        continue
-                if line[i] == '$':
-                    # end of row
-                    for _ in range(multiplier):
-                        y -= 1
-                    x = upper_left[0]
-                    i += 1
-                    if i >= len(line):
-                        continue
-                if line[i] == '!':
-                    # all done
-                    break
-
-        fin.close()
-
-        # format: xmin, xmax, ymin, ymax
-        bounds = [upper_left[0], upper_left[0] + width - 1,
-                  upper_left[1] - height + 1, upper_left[1]]
-        self.viewer.setGridView(bounds[0], bounds[1], bounds[2], bounds[3])
-        self.viewer.setLiveCells(cells)
 
     def resize(self):
         """Recalculate the window size. Make sure aspect ratio is maintained

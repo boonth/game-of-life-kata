@@ -1,15 +1,15 @@
 todo
 -------------------------------
+- make things consistent, everything should be classes or interfaces, etc.
 - make grid infinite
 - add 'play' option to menu bar
-- add 'tick' option to menu bar
 - find way to refresh and do animation
   - variable amount of pausing
+- add save option to gui
 - keep aspect ratio constant
   - change size of window / viewport to accomodate
   - take into account menu bar and task bar to keep cells square
   - when resizing, just reveal more of the grid
 - update status bar while mousing over
-- add reader classes, window should not be reading
-- add writers for all outputs
+- create write function for RLE file format
 - add tests
